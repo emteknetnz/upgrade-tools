@@ -9,12 +9,12 @@ Install with composer by adding the repo to your composer.json file:
 ```
 {
     "type": "git",
-    "url": "https://github.com/emteknetnz/upgrade-tools.git"
+    "url": "https://github.com/emteknetnz/upgrade-tools"
 }
 ```
 
-Then run
+Then run the following (which may take a while)
 
 ```
-composer require --dev emteknetnz/upgrade-tools
+composer require --dev emteknetnz/upgrade-tools:dev-master
 ```
