@@ -4,9 +4,17 @@ The dev only modules contains some tools to help with upgrading SilverStripe web
 
 ## Installation
 
-Install with composer by running:
+Install with composer by adding the repo to your composer.json file:
 
 ```
-composer config repositories.repo-name vcs https://github.com/emteknetnz/upgrade-tools.git
-composer require --dev emteknetnz/upgrade-tools:dev-master
+{
+    "type": "git",
+    "url": "https://github.com/emteknetnz/upgrade-tools.git"
+}
+```
+
+Then run
+
+```
+composer require --dev emteknetnz/upgrade-tools
 ```
