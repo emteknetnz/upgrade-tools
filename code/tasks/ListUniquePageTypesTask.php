@@ -28,6 +28,12 @@ class ListUniquePageTypesTask extends BuildTask
      */
     public function run($request)
     {
+        if (!Permission::check('ADMIN')) {
+            echo 'Only admins may run this task';
+            return;
+        }
+        $oldMode = Versioned::get_reading_mode();
+        Versioned::reading_stage('Live');
         $this->echoStyles();
         $subsiteIDs = [-1];
         if (class_exists('Subsite')) {
@@ -37,6 +43,7 @@ class ListUniquePageTypesTask extends BuildTask
         foreach ($subsiteIDs as $subsiteID) {
             $this->echoTable($subsiteID);
         }
+        Versioned::set_reading_mode($oldMode);
     }
 
     /**
