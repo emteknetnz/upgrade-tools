@@ -64,6 +64,7 @@ class ListUniquePageTypesTask extends BuildTask
         }
         $ids = [];
         $urls = [];
+        $cmsLinks = [];
         echo "<table cellpadding='0' cellspacing='0'>";
         foreach ($classes as $class) {
             if (in_array($class, $this->excludeClasses)) {
@@ -85,10 +86,13 @@ class ListUniquePageTypesTask extends BuildTask
             ]);
             echo "</td></tr>";
             $urls[] = "'{$page->Link()}',";
+            $cmsUrls = "'{$page->CMSEditLink()}',";
         }
         echo "</table>";
         sort($urls);
         echo "<div class='urls'>" . implode("<br>", $urls) . "</div>";
+        sort($cmsUrls);
+        echo "<div class='urls'>" . implode("<br>", $cmsUrls) . "</div>";
     }
 
     /**
