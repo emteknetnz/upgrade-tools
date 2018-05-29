@@ -64,7 +64,7 @@ class ListUniquePageTypesTask extends BuildTask
         }
         $ids = [];
         $urls = [];
-        $cmsUrls = ["'/admin'"];
+        $cmsUrls = ["'/admin',"];
         echo "<table cellpadding='0' cellspacing='0'>";
         foreach ($classes as $class) {
             if (in_array($class, $this->excludeClasses)) {
