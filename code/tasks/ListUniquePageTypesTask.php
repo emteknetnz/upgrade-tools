@@ -86,7 +86,8 @@ class ListUniquePageTypesTask extends BuildTask
             ]);
             echo "</td></tr>";
             $urls[] = "'{$page->Link()}',";
-            $cmsUrls[] = "'{$page->CMSEditLink()}',";
+            $cmsUrl = '/' . str_replace('?Locale=en_NZ', '', $page->CMSEditLink());
+            $cmsUrls[] = "'$cmsUrl',";
         }
         echo "</table>";
         sort($urls);
