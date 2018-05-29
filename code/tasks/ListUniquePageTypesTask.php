@@ -28,7 +28,7 @@ class ListUniquePageTypesTask extends BuildTask
      */
     public function run($request)
     {
-        if (!Directory::isDev() && !Permission::check('ADMIN')) {
+        if (!Director::isDev() && !Permission::check('ADMIN')) {
             echo 'Only admins may run this task';
             return;
         }
