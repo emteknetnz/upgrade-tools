@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * Used to list all unique page and content block types
+ *
+ * Works with Elemental and Sheadawson content blocks
+ *
+ * Intended to be used with https://github.com/emteknetnz/roboshot
+ */
 class ListUniquePageTypesTask extends BuildTask
 {
 
@@ -24,6 +31,15 @@ class ListUniquePageTypesTask extends BuildTask
     ];
 
     /**
+     * List of pageIDs to prevent including duplicate pages
+     *
+     * @var array
+     */
+    protected $pageIDs = [];
+
+    protected $pageIDsToBlockClassNames = [];
+
+    /**
      * @param SS_HTTPRequest $request
      */
     public function run($request)
@@ -41,58 +57,157 @@ class ListUniquePageTypesTask extends BuildTask
             Subsite::$use_session_subsiteid = true;
         }
         foreach ($subsiteIDs as $subsiteID) {
-            $this->echoTable($subsiteID);
+            if ($subsiteID != -1) {
+                Subsite::changeSubsite($subsiteID);
+                $subsite = Subsite::all_sites()->find('ID', $subsiteID);
+                echo "<br>";
+                echo "<h2>{$subsite->Title} - {$subsite->ID}</h2>";
+            }
+            $blockPages = $this->getContentBlockPages($subsiteID);
+            foreach ($blockPages as $blockPage) {
+                $id = $blockPage['id'];
+                if (!array_key_exists($id, $this->pageIDsToBlockClassNames)) {
+                    $this->pageIDsToBlockClassNames[$id] = [];
+                }
+                $this->pageIDsToBlockClassNames[$id][] = $blockPage['blockclass'];
+            }
+            $pages = array_merge(
+                $this->getContentBlockPages($subsiteID),
+                $this->getPages()
+            );
+            // unique page ids
+            $pageIDs = [];
+            $pages = array_filter($pages, function($page) use (&$pageIDs) {
+                if (in_array($page['id'], $pageIDs)) {
+                    return false;
+                }
+                $pageIDs[] = $page['id'];
+                return true;
+            });
+            $this->echoTable($pages);
         }
         Versioned::set_reading_mode($oldMode);
     }
 
-    /**
-     * @param int $subsiteID
-     */
-    protected function echoTable($subsiteID = -1) {
+    protected function echoTable($pages) {
         /** @var Subsite $subsite */
         /** @var Page $page */
         $absBaseUrl = Director::absoluteBaseURL();
+        echo "<table cellpadding='0' cellspacing='0'><tr>";
+        echo "<td><b>PageClassName</b></td>";
+        echo "<td><b>BlockClassNames</b></td>";
+        echo "<td><b>PageID</b></td>";
+        echo "<td><b>FrontEndUrl</b></td>";
+        echo "<td><b>CMSUrl</b></td>";
+        echo "</tr>";
+        foreach ($pages as $page) {
+            if ($page['cms'] == '/admin') {
+                continue;
+            }
+            echo "<tr><td>";
+            $frontEndUrl = $absBaseUrl . ltrim($page['frontend'], '/');
+            $cmsUrl = $absBaseUrl . ltrim($page['cms'], '/');
+            $blockClassNames = array_key_exists($page['id'], $this->pageIDsToBlockClassNames)
+                ? implode('<br>', $this->pageIDsToBlockClassNames[$page['id']]) : '';
+            echo implode("</td><td>", [
+                $page['class'],
+                $blockClassNames,
+                $page['id'],
+                "<a href='$frontEndUrl' target='_blank'>$frontEndUrl</a>",
+                "<a href='$cmsUrl' target='_blank'>$cmsUrl</a>",
+            ]);
+            echo "</td></tr>";
+        }
+        echo "</table>";
+        $frontEndUrls = array_map(function($page) { return $page['frontend']; }, $pages);
+        $cmsUrls = array_map(function($page) { return $page['cms']; }, $pages);
+        sort($frontEndUrls);
+        sort($cmsUrls);
+        echo "<div class='urls'>'" . implode("',<br>'", $frontEndUrls) . "',</div>";
+        echo "<div class='urls'>'" . implode("',<br>'", $cmsUrls) . "',</div>";
+    }
+
+    protected function getPages()
+    {
         $classes = ClassInfo::subclassesFor('Page');
         sort($classes);
-        if ($subsiteID != -1) {
-            Subsite::changeSubsite($subsiteID);
-            $subsite = Subsite::all_sites()->find('ID', $subsiteID);
-            $absBaseUrl = $subsite->absoluteBaseURL();
-            echo "<br>";
-            echo "<h2>{$subsite->Title} - {$subsite->ID}</h2>";
-        }
-        $ids = [];
-        $urls = [];
-        $cmsUrls = ["'/admin',"];
-        echo "<table cellpadding='0' cellspacing='0'>";
+        $pages = [[
+            'id' => '',
+            'class' => '',
+            'blockclass' => '',
+            'frontend' => '',
+            'cms' => '/admin'
+        ]];
         foreach ($classes as $class) {
             if (in_array($class, $this->excludeClasses)) {
                 continue;
             }
-            $page = Page::get()->filter('ClassName', $class)->exclude('ID', $ids)->first();
+            $page = Page::get()->filter('ClassName', $class)->first();
+            // ->exclude('ID', $this->pageIDs)
             if (!$page) {
                 continue;
             }
-            $ids[] = $page->ID;
-            $link = $absBaseUrl . ltrim($page->Link(), '/');
-            $cmsLink = $absBaseUrl. $page->CMSEditLink();
-            echo "<tr><td>";
-            echo implode("</td><td>", [
-                $class,
-                $page->ID,
-                "<a href='$link' target='_blank'>$link</a>",
-                "<a href='$cmsLink' target='_blank'>$cmsLink</a>",
-            ]);
-            echo "</td></tr>";
-            $urls[] = "'{$page->Link()}',";
-            $cmsUrl = '/' . str_replace('?Locale=en_NZ', '', $page->CMSEditLink());
-            $cmsUrls[] = "'$cmsUrl',";
+            $this->pageIDs[] = $page->ID;
+            $pages[] = [
+                'id' => $page->ID,
+                'class' => $class,
+                'blockclass' => '',
+                'frontend' => $page->Link(),
+                'cms' => str_replace('?Locale=en_NZ', '', '/' . $page->CMSEditLink())
+            ];
         }
-        echo "</table>";
-        sort($urls);
-        echo "<div class='urls'>" . implode("<br>", $urls) . "</div>";
-        echo "<div class='urls'>" . implode("<br>", $cmsUrls) . "</div>";
+        return $pages;
+    }
+
+    protected function getContentBlockPages($subsiteID = -1)
+    {
+        $baseClasses = ['Block']; // TODO: add elemental
+        $pages = [];
+        foreach ($baseClasses as $baseClass) {
+            $classes = ClassInfo::subclassesFor($baseClass);
+            foreach ($classes as $class) {
+                if (in_array($class, $this->excludeClasses)) {
+                    continue;
+                }
+                $subsiteWhere = '';
+                if ($subsiteID != -1) {
+                    $subsiteWhere = "and SiteTree_Live.SubsiteID = $subsiteID";
+                }
+                $sql = <<<EOT
+                    select
+                        SiteTree_Live.ID as ID,
+                        SiteTree_Live.ClassName as ClassName,
+                        Block_Live.ClassName as BlockClassName
+                    from
+                        SiteTree_Blocks
+                    inner join
+                        SiteTree_Live on SiteTree_Blocks.SiteTreeID = SiteTree_Live.ID
+                    inner join
+                        Block_Live on SiteTree_Blocks.BlockID = Block_Live.ID
+                    where
+                        Block_Live.ClassName = '$class'
+                    $subsiteWhere
+                    limit 1
+EOT;
+                $query = DB::query($sql);
+                $r = $query->first();
+                if (!$r) {
+                    continue;
+                }
+                $page = Page::get()->byID($r['ID']);
+                if (!$page) {
+                    continue;
+                }
+                $pages[] = [
+                    'id' => $page->ID,
+                    'class' => $r['ClassName'],
+                    'blockclass' => $r['BlockClassName'],
+                    'frontend' => $page->Link(),
+                    'cms' => str_replace('?Locale=en_NZ', '', '/' . $page->CMSEditLink())
+                ];
+            }
+        }
+        return $pages;
     }
 
     /**
