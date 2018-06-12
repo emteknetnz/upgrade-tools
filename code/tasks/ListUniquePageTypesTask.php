@@ -30,13 +30,6 @@ class ListUniquePageTypesTask extends BuildTask
         'SubsitesVirtualPage'
     ];
 
-    /**
-     * List of pageIDs to prevent including duplicate pages
-     *
-     * @var array
-     */
-    protected $pageIDs = [];
-
     protected $pageIDsToBlockClassNames = [];
 
     /**
@@ -75,13 +68,18 @@ class ListUniquePageTypesTask extends BuildTask
                 $this->getContentBlockPages($subsiteID),
                 $this->getPages()
             );
-            // unique page ids
+            // unique page ids & classes
             $pageIDs = [];
-            $pages = array_filter($pages, function($page) use (&$pageIDs) {
+            $pageClasses = [];
+            $pages = array_filter($pages, function($page) use (&$pageIDs, &$pageClasses) {
                 if (in_array($page['id'], $pageIDs)) {
                     return false;
                 }
+                if (in_array($page['class'], $pageClasses) && $page['blockclass'] == '') {
+                    return false;
+                }
                 $pageIDs[] = $page['id'];
+                $pageClasses[] = $page['class'];
                 return true;
             });
             $this->echoTable($pages);
@@ -143,11 +141,9 @@ class ListUniquePageTypesTask extends BuildTask
                 continue;
             }
             $page = Page::get()->filter('ClassName', $class)->first();
-            // ->exclude('ID', $this->pageIDs)
             if (!$page) {
                 continue;
             }
-            $this->pageIDs[] = $page->ID;
             $pages[] = [
                 'id' => $page->ID,
                 'class' => $class,
@@ -161,9 +157,17 @@ class ListUniquePageTypesTask extends BuildTask
 
     protected function getContentBlockPages($subsiteID = -1)
     {
-        $baseClasses = ['Block']; // TODO: add elemental
         $pages = [];
+        $baseClasses = [
+            // sheadawson blocks
+            'Block',
+            // dna elements blocks
+            'BaseElement'
+        ];
         foreach ($baseClasses as $baseClass) {
+            if (!class_exists($baseClass)) {
+                continue;
+            }
             $classes = ClassInfo::subclassesFor($baseClass);
             foreach ($classes as $class) {
                 if (in_array($class, $this->excludeClasses)) {
@@ -171,24 +175,49 @@ class ListUniquePageTypesTask extends BuildTask
                 }
                 $subsiteWhere = '';
                 if ($subsiteID != -1) {
-                    $subsiteWhere = "and SiteTree_Live.SubsiteID = $subsiteID";
+                    $subsiteWhere = "where SiteTree_Live.SubsiteID = $subsiteID";
                 }
-                $sql = <<<EOT
-                    select
-                        SiteTree_Live.ID as ID,
-                        SiteTree_Live.ClassName as ClassName,
-                        Block_Live.ClassName as BlockClassName
-                    from
-                        SiteTree_Blocks
-                    inner join
-                        SiteTree_Live on SiteTree_Blocks.SiteTreeID = SiteTree_Live.ID
-                    inner join
-                        Block_Live on SiteTree_Blocks.BlockID = Block_Live.ID
-                    where
-                        Block_Live.ClassName = '$class'
-                    $subsiteWhere
-                    limit 1
+                $sql = '';
+                if ($baseClass == 'Block') {
+                    $sql = <<<EOT
+                        select
+                            SiteTree_Live.ID as ID,
+                            SiteTree_Live.ClassName as ClassName,
+                            Block_Live.ClassName as BlockClassName
+                        from
+                            SiteTree_Blocks
+                        inner join
+                            SiteTree_Live on SiteTree_Blocks.SiteTreeID = SiteTree_Live.ID
+                        inner join
+                            Block_Live on SiteTree_Blocks.BlockID = Block_Live.ID
+                        $subsiteWhere
+                        and
+                            Block_Live.ClassName = '$class'
+                        limit 1
 EOT;
+                }
+                if ($baseClass == 'BaseElement') {
+                    $sql = <<<EOT
+                        select
+                            SiteTree_Live.ID as ID,
+                            SiteTree_Live.ClassName as ClassName,
+                            Widget_Live.ClassName as BlockClassName
+                        from
+                            Widget_Live
+                        inner join
+                            Page_Live
+                        on
+                            Widget_Live.ParentID = Page_Live.ElementAreaID
+                        inner join
+                            SiteTree_Live
+                        on
+                            Page_Live.ID = SiteTree_Live.ID
+                        $subsiteWhere
+                        and
+                            Widget_Live.ClassName = '$class'
+                        limit 1
+EOT;
+                }
                 $query = DB::query($sql);
                 $r = $query->first();
                 if (!$r) {
@@ -199,11 +228,11 @@ EOT;
                     continue;
                 }
                 $pages[] = [
-                    'id' => $page->ID,
-                    'class' => $r['ClassName'],
+                    'id'         => $page->ID,
+                    'class'      => $r['ClassName'],
                     'blockclass' => $r['BlockClassName'],
-                    'frontend' => $page->Link(),
-                    'cms' => str_replace('?Locale=en_NZ', '', '/' . $page->CMSEditLink())
+                    'frontend'   => $page->Link(),
+                    'cms'        => str_replace('?Locale=en_NZ', '', '/' . $page->CMSEditLink())
                 ];
             }
         }
