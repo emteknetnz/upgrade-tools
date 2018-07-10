@@ -1,2 +1,0 @@
-- scan sheadawson block types
-- scan elemental block types
