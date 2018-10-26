@@ -118,11 +118,12 @@ class ListUniquePageTypesTask extends BuildTask
         }
         echo "</table>";
         $frontEndUrls = array_map(function($page) { return $page['frontend']; }, $pages);
-        $cmsUrls = array_map(function($page) { return $page['cms']; }, $pages);
         sort($frontEndUrls);
-        sort($cmsUrls);
         echo "<div class='urls'>'" . implode("',<br>'", $frontEndUrls) . "',</div>";
-        echo "<div class='urls'>'" . implode("',<br>'", $cmsUrls) . "',</div>";
+        // disabling profiling admin because it's horrible in roboshot
+        // $cmsUrls = array_map(function($page) { return $page['cms']; }, $pages);
+        // sort($cmsUrls);
+        // echo "<div class='urls'>'" . implode("',<br>'", $cmsUrls) . "',</div>";
     }
 
     protected function getPages()
@@ -136,6 +137,8 @@ class ListUniquePageTypesTask extends BuildTask
             'frontend' => '',
             'cms' => '/admin'
         ]];
+        // disabling profiling admin because it's horrible in roboshot
+        $pages = [];
         foreach ($classes as $class) {
             if (in_array($class, $this->excludeClasses)) {
                 continue;
