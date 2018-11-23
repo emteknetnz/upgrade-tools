@@ -120,6 +120,14 @@ class ListUniquePageTypesTask extends BuildTask
         $frontEndUrls = array_map(function($page) { return $page['frontend']; }, $pages);
         sort($frontEndUrls);
         echo "<div class='urls'>'" . implode("',<br>'", $frontEndUrls) . "',</div>";
+        // urls for wraith:
+        $wraithUrls = ['Urls for wraith configs/capture.yaml'];
+        $c = 1;
+        foreach ($frontEndUrls as $frontEndUrl) {
+            $wraithUrls[] = "x$c: $frontEndUrl";
+            $c++;
+        }
+        echo "<div class='urls'>" . implode("<br>", $wraithUrls) . "</div>";
         // disabling profiling admin because it's horrible in roboshot
         // $cmsUrls = array_map(function($page) { return $page['cms']; }, $pages);
         // sort($cmsUrls);
