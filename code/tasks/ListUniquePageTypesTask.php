@@ -124,7 +124,7 @@ class ListUniquePageTypesTask extends BuildTask
         $wraithUrls = ['Urls for wraith configs/capture.yaml'];
         $c = 1;
         foreach ($frontEndUrls as $frontEndUrl) {
-            $wraithUrls[] = "x$c: $frontEndUrl";
+            $wraithUrls[] = "  x$c: $frontEndUrl";
             $c++;
         }
         echo "<div class='urls'>" . implode("<br>", $wraithUrls) . "</div>";
