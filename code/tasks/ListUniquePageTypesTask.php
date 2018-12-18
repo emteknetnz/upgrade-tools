@@ -116,15 +116,10 @@ EOT;
         sort($frontEndUrls);
 
         // wraith capture:
-        $currentDomain = preg_replace('%^(.+)\.(.+)$%', '$1-baseline.$2', $absBaseUrl);
-        $newDomain = $absBaseUrl;
+        $baselineDomain = rtrim(preg_replace('%^(.+)\.(.+)$%', '$1-baseline.$2', $absBaseUrl), '/');
+        $featureDomain = rtrim($absBaseUrl, '/');
         echo "<h3>Urls for wraith configs/capture.yaml</h3>";
-        echo "<pre class='yml'>" . $this->createWraithCaptureYml($currentDomain, $newDomain, $frontEndUrls) . "</pre>";
-
-        // wraith history:
-        $domain = $absBaseUrl;
-        echo "<h3>Urls for wraith configs/history.yaml</h3>";
-        echo "<pre class='yml'>" . $this->createWraithHistoryYml($domain, $frontEndUrls) . "</pre>";
+        echo "<pre class='yml'>" . $this->createWraithCaptureYml($baselineDomain, $featureDomain, $frontEndUrls) . "</pre>";
 
         // raw paths:
         echo "<h3>Raw paths</h3>";
@@ -269,45 +264,25 @@ EOT;
 EOT;
     }
 
-    protected function createWraithCaptureYml($currentDomain, $newDomain, array $paths)
+    protected function createWraithCaptureYml($baselineDomain, $featureDomain, array $paths)
     {
         $pathsYml = $this->createPathsYml($paths);
         return <<<EOT
 domains:
-  current: "$currentDomain"
-  new:     "$newDomain"
+  baseline: '$baselineDomain'
+  feature:  '$featureDomain'
 
 paths:
 $pathsYml
 
 screen_widths:
-  - 1280x2000
+  - 1280
+
+threshold: 2
 
 directory: 'shots'
 
-browser: "phantomjs"
-
-fuzz: '20%'
-
-EOT;
-    }
-
-    protected function createWraithHistoryYml($domain, array $paths)
-    {
-        $pathsYml = $this->createPathsYml($paths);
-        return <<<EOT
-domains:
-  mydomain: "$domain"
-
-paths:
-$pathsYml
-
-screen_widths:
-  - 1280x2000
-
-directory: 'shots'
-
-browser: "phantomjs"
+browser: 'phantomjs'
 
 fuzz: '20%'
 
