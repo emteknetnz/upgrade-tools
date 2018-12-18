@@ -281,7 +281,7 @@ paths:
 $pathsYml
 
 screen_widths:
-  - 1280
+  - 1280x2000
 
 directory: 'shots'
 
@@ -303,7 +303,7 @@ paths:
 $pathsYml
 
 screen_widths:
-  - 1280
+  - 1280x2000
 
 directory: 'shots'
 
