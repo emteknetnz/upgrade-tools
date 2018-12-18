@@ -280,11 +280,13 @@ screen_widths:
 
 threshold: 2
 
+fuzz: '20%'
+
 directory: 'shots'
 
-browser: 'phantomjs'
+mode: diffs_first
 
-fuzz: '20%'
+browser: 'phantomjs'
 
 EOT;
     }
