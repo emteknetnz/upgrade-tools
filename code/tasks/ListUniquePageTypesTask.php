@@ -288,6 +288,7 @@ directory: 'shots'
 browser: "phantomjs"
 
 fuzz: '20%'
+
 EOT;
     }
 
@@ -309,6 +310,7 @@ directory: 'shots'
 browser: "phantomjs"
 
 fuzz: '20%'
+
 EOT;
     }
 
