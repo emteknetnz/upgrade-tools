@@ -5,24 +5,14 @@
  *
  * Works with Elemental and Sheadawson content blocks
  *
- * Intended to be used with https://github.com/emteknetnz/roboshot
+ * Intended to be used with wraith
  */
 class ListUniquePageTypesTask extends BuildTask
 {
-
-    /**
-     * @var string
-     */
     protected $title = 'List Unique Page Types';
 
-    /**
-     * @var string
-     */
     protected $description = 'List an example of each page type to help with regression testing';
 
-    /**
-     * @var array
-     */
     protected $excludeClasses = [
         'BaseHomePage',
         'RedirectorPage',
@@ -91,13 +81,16 @@ class ListUniquePageTypesTask extends BuildTask
         /** @var Subsite $subsite */
         /** @var Page $page */
         $absBaseUrl = Director::absoluteBaseURL();
-        echo "<table cellpadding='0' cellspacing='0'><tr>";
-        echo "<td><b>PageClassName</b></td>";
-        echo "<td><b>BlockClassNames</b></td>";
-        echo "<td><b>PageID</b></td>";
-        echo "<td><b>FrontEndUrl</b></td>";
-        echo "<td><b>CMSUrl</b></td>";
-        echo "</tr>";
+        echo <<<EOT
+            <table cellpadding='0' cellspacing='0'>
+                <tr>
+                    <td><b>PageClassName</b></td>
+                        <td><b>BlockClassNames</b></td>
+                        <td><b>PageID</b></td>
+                        <td><b>FrontEndUrl</b></td>
+                        <td><b>CMSUrl</b></td>
+                </tr>
+EOT;
         foreach ($pages as $page) {
             if ($page['cms'] == '/admin') {
                 continue;
@@ -117,35 +110,31 @@ class ListUniquePageTypesTask extends BuildTask
             echo "</td></tr>";
         }
         echo "</table>";
+
+        // get frontend urls and sort them
         $frontEndUrls = array_map(function($page) { return $page['frontend']; }, $pages);
         sort($frontEndUrls);
+
+        // wraith capture:
+        $currentDomain = preg_replace('%^(.+)\.(.+)$%', '$1-baseline.$2', $absBaseUrl);
+        $newDomain = $absBaseUrl;
+        echo "<h3>Urls for wraith configs/capture.yaml</h3>";
+        echo "<pre class='yml'>" . $this->createWraithCaptureYml($currentDomain, $newDomain, $frontEndUrls) . "</pre>";
+
+        // wraith history:
+        $domain = $absBaseUrl;
+        echo "<h3>Urls for wraith configs/history.yaml</h3>";
+        echo "<pre class='yml'>" . $this->createWraithHistoryYml($domain, $frontEndUrls) . "</pre>";
+
+        // raw paths:
+        echo "<h3>Raw paths</h3>";
         echo "<div class='urls'>'" . implode("',<br>'", $frontEndUrls) . "',</div>";
-        // urls for wraith:
-        $wraithUrls = ['Urls for wraith configs/capture.yaml'];
-        $c = 1;
-        foreach ($frontEndUrls as $frontEndUrl) {
-            $wraithUrls[] = "&nbsp;&nbsp;x$c: $frontEndUrl";
-            $c++;
-        }
-        echo "<div class='urls'>" . implode("<br>", $wraithUrls) . "</div>";
-        // disabling profiling admin because it's horrible in roboshot
-        // $cmsUrls = array_map(function($page) { return $page['cms']; }, $pages);
-        // sort($cmsUrls);
-        // echo "<div class='urls'>'" . implode("',<br>'", $cmsUrls) . "',</div>";
     }
 
     protected function getPages()
     {
         $classes = ClassInfo::subclassesFor('Page');
         sort($classes);
-        $pages = [[
-            'id' => '',
-            'class' => '',
-            'blockclass' => '',
-            'frontend' => '',
-            'cms' => '/admin'
-        ]];
-        // disabling profiling admin because it's horrible in roboshot
         $pages = [];
         foreach ($classes as $class) {
             if (in_array($class, $this->excludeClasses)) {
@@ -250,9 +239,6 @@ EOT;
         return $pages;
     }
 
-    /**
-     * CSS styles
-     */
     protected function echoStyles()
     {
         echo <<<EOT
@@ -270,9 +256,70 @@ EOT;
               .urls {
                 font-family: courier new;
                 font-size: 13px;
-                padding: 20px 0 0 0;
+                background-color: #efefef;
+                border: 1px solid green;
+                padding: 20px;
+              }
+              .yml {
+                background-color: #efefef;
+                border: 1px solid blue;
+                padding: 20px;
               }
             </style>        
 EOT;
+    }
+
+    protected function createWraithCaptureYml($currentDomain, $newDomain, array $paths)
+    {
+        $pathsYml = $this->createPathsYml($paths);
+        return <<<EOT
+domains:
+  current: "$currentDomain"
+  new:     "$newDomain"
+
+paths:
+$pathsYml
+
+screen_widths:
+  - 1280
+
+directory: 'shots'
+
+browser: "phantomjs"
+
+fuzz: '20%'
+EOT;
+    }
+
+    protected function createWraithHistoryYml($domain, array $paths)
+    {
+        $pathsYml = $this->createPathsYml($paths);
+        return <<<EOT
+domains:
+  mydomain: "$domain"
+
+paths:
+$pathsYml
+
+screen_widths:
+  - 1280
+
+directory: 'shots'
+
+browser: "phantomjs"
+
+fuzz: '20%'
+EOT;
+    }
+
+    protected function createPathsYml(array $paths)
+    {
+        $arr = [];
+        for ($i = 1; $i <= count($paths); $i++) {
+            $path = $paths[$i - 1];
+            $x = 'x' . str_pad($i, 2, '0', STR_PAD_LEFT);
+            $arr[] = "  $x: $path";
+        }
+        return implode("\n", $arr);
     }
 }
