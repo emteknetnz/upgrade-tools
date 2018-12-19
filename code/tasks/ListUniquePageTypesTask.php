@@ -268,6 +268,8 @@ EOT;
     {
         $pathsYml = $this->createPathsYml($paths);
         return <<<EOT
+# docker-wraith capture configs/capture.yaml        
+        
 domains:
   baseline: '$baselineDomain'
   feature:  '$featureDomain'
