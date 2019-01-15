@@ -2,11 +2,12 @@
 
 namespace emteknetnz\UpgradeTools;
 
-use SilverStripe\Control\Director;
-use SilverStripe\Dev\BuildTask;
-use SilverStripe\Versioned\Versioned;
-use SilverStripe\Core\ClassInfo;
 use SilverStripe\CMS\Model\SiteTree;
+use SilverStripe\Control\Director;
+use SilverStripe\Core\ClassInfo;
+use SilverStripe\Dev\BuildTask;
+use SilverStripe\ORM\DB;
+use SilverStripe\Versioned\Versioned;
 
 /**
  * Used to list all unique page and content block types
@@ -21,11 +22,11 @@ class ListUniquePageTypesTask extends BuildTask
 
     protected $description = 'List an example of each page type to help with regression testing';
 
-    protected $excludeClasses = [
+    protected $excludedPageClasses = [
         'BaseHomePage', // TODO: this
         'SilverStripe\CMS\Model\RedirectorPage',
         'SilverStripe\CMS\Model\VirtualPage',
-        'SubsitesVirtualPage' // TODO: subsite
+        'SubsitesVirtualPage', // TODO: subsite
     ];
 
     protected $pageIDsToBlockClassNames = [];
@@ -140,7 +141,7 @@ EOT;
         sort($classes);
         $pages = [];
         foreach ($classes as $class) {
-            if (in_array($class, $this->excludeClasses)) {
+            if (in_array($class, $this->excludedPageClasses)) {
                 continue;
             }
             $page = SiteTree::get()->filter('ClassName', $class)->first();
@@ -161,83 +162,61 @@ EOT;
     protected function getContentBlockPages($subsiteID = -1)
     {
         $pages = [];
-        $baseClasses = [
-            // sheadawson blocks
-            'Block',
-            // dna elements blocks
-            'BaseElement'
-        ];
-        foreach ($baseClasses as $baseClass) {
-            if (!class_exists($baseClass)) {
+        $baseElementalClass = 'DNADesign\Elemental\Models\BaseElement';
+        if (!class_exists($baseElementalClass)) {
+            return $pages;
+        }
+        $elementalClasses = ClassInfo::subclassesFor($baseElementalClass);
+        $elementalClasses = array_diff($elementalClasses, [$baseElementalClass]);
+        foreach ($elementalClasses as $elementalClass) {
+            $subsiteWhere = '';
+            if ($subsiteID != -1) {
+                $subsiteWhere = "SiteTree_Live.SubsiteID = $subsiteID AND";
+            }
+            $escapedElementalClass = addslashes($elementalClass);
+            $escapedPageClasses = [];
+            foreach ($this->excludedPageClasses as $pageClass) {
+                $escapedPageClasses[] = addslashes($pageClass);
+            }
+            $siteTreeNotIn = implode("','", $escapedPageClasses);
+            $sql = <<<EOT
+                SELECT
+                    SiteTree_Live.ID as ID,
+                    SiteTree_Live.ClassName as ClassName,
+                    Element_Live.ClassName as BlockClassName
+                FROM
+                    Element_Live
+                INNER JOIN
+                    Page_Live
+                ON
+                    Element_Live.ParentID = Page_Live.ElementalAreaID
+                INNER JOIN
+                    SiteTree_Live
+                ON
+                    Page_Live.ID = SiteTree_Live.ID
+                WHERE
+                  $subsiteWhere
+                  Element_Live.ClassName = '$escapedElementalClass'
+                AND
+                  SiteTree_Live.ClassName NOT IN ('$siteTreeNotIn')
+                LIMIT 1
+EOT;
+            $query = DB::query($sql);
+            $r = $query->first();
+            if (!$r) {
                 continue;
             }
-            $classes = ClassInfo::subclassesFor($baseClass);
-            foreach ($classes as $class) {
-                if (in_array($class, $this->excludeClasses)) {
-                    continue;
-                }
-                $subsiteWhere = '';
-                if ($subsiteID != -1) {
-                    $subsiteWhere = "where SiteTree_Live.SubsiteID = $subsiteID";
-                }
-                $sql = '';
-                if ($baseClass == 'Block') {
-                    $sql = <<<EOT
-                        select
-                            SiteTree_Live.ID as ID,
-                            SiteTree_Live.ClassName as ClassName,
-                            Block_Live.ClassName as BlockClassName
-                        from
-                            SiteTree_Blocks
-                        inner join
-                            SiteTree_Live on SiteTree_Blocks.SiteTreeID = SiteTree_Live.ID
-                        inner join
-                            Block_Live on SiteTree_Blocks.BlockID = Block_Live.ID
-                        $subsiteWhere
-                        and
-                            Block_Live.ClassName = '$class'
-                        limit 1
-EOT;
-                }
-                if ($baseClass == 'BaseElement') {
-                    $sql = <<<EOT
-                        select
-                            SiteTree_Live.ID as ID,
-                            SiteTree_Live.ClassName as ClassName,
-                            Widget_Live.ClassName as BlockClassName
-                        from
-                            Widget_Live
-                        inner join
-                            Page_Live
-                        on
-                            Widget_Live.ParentID = Page_Live.ElementAreaID
-                        inner join
-                            SiteTree_Live
-                        on
-                            Page_Live.ID = SiteTree_Live.ID
-                        $subsiteWhere
-                        and
-                            Widget_Live.ClassName = '$class'
-                        limit 1
-EOT;
-                }
-                $query = DB::query($sql);
-                $r = $query->first();
-                if (!$r) {
-                    continue;
-                }
-                $page = Page::get()->byID($r['ID']);
-                if (!$page) {
-                    continue;
-                }
-                $pages[] = [
-                    'id'         => $page->ID,
-                    'class'      => $r['ClassName'],
-                    'blockclass' => $r['BlockClassName'],
-                    'frontend'   => $page->Link(),
-                    'cms'        => str_replace('?Locale=en_NZ', '', '/' . $page->CMSEditLink())
-                ];
+            $page = SiteTree::get()->byID($r['ID']);
+            if (!$page) {
+                continue;
             }
+            $pages[] = [
+                'id'         => $page->ID,
+                'class'      => $r['ClassName'],
+                'blockclass' => $r['BlockClassName'],
+                'frontend'   => $page->Link(),
+                'cms'        => str_replace('?Locale=en_NZ', '', '/' . $page->CMSEditLink())
+            ];
         }
         return $pages;
     }
