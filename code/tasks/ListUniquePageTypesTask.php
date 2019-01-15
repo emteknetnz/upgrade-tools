@@ -40,18 +40,19 @@ class ListUniquePageTypesTask extends BuildTask
             echo 'Only admins may run this task';
             return;
         }
+        $subsiteSingleton = $this->getSubsiteSingleton();
         $oldMode = Versioned::get_reading_mode();
         Versioned::set_reading_mode('Stage.Live');
         $this->echoStyles();
         $subsiteIDs = [-1];
-        if (class_exists('Subsite')) {
-            $subsiteIDs = Subsite::all_sites()->column('ID');
-            Subsite::$use_session_subsiteid = true;
+        if ($subsiteSingleton) {
+            $subsiteIDs = $subsiteSingleton::all_sites()->column('ID');
         }
         foreach ($subsiteIDs as $subsiteID) {
             if ($subsiteID != -1) {
-                Subsite::changeSubsite($subsiteID);
-                $subsite = Subsite::all_sites()->find('ID', $subsiteID);
+                $subsiteStateSingleton = $this->getSubsiteStateSingleton();
+                $subsiteStateSingleton->setSubsiteId($subsiteID);
+                $subsite = $subsiteSingleton::all_sites()->find('ID', $subsiteID);
                 echo "<br>";
                 echo "<h2>{$subsite->Title} - {$subsite->ID}</h2>";
             }
@@ -219,6 +220,22 @@ EOT;
             ];
         }
         return $pages;
+    }
+
+    /**
+     * Not all sites will have subsites, so cannot use the Subsite namespace
+     * Using a singleton instead to make it dynamic
+     */
+    protected function getSubsiteSingleton()
+    {
+        $class = 'SilverStripe\Subsites\Model\Subsite';
+        return class_exists($class) ? singleton($class) : null;
+    }
+
+    protected function getSubsiteStateSingleton()
+    {
+        $class = 'SilverStripe\Subsites\State\SubsiteState';
+        return class_exists($class) ? singleton($class) : null;
     }
 
     protected function echoStyles()
