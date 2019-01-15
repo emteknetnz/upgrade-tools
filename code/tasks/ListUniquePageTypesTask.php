@@ -26,7 +26,7 @@ class ListUniquePageTypesTask extends BuildTask
         'BaseHomePage', // TODO: this
         'SilverStripe\CMS\Model\RedirectorPage',
         'SilverStripe\CMS\Model\VirtualPage',
-        'SubsitesVirtualPage', // TODO: subsite
+        'SilverStripe\Subsites\Pages\SubsitesVirtualPage',
     ];
 
     protected $pageIDsToBlockClassNames = [];
