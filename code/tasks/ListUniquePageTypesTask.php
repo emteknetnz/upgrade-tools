@@ -1,5 +1,13 @@
 <?php
 
+namespace emteknetnz\UpgradeTools;
+
+use SilverStripe\Control\Director;
+use SilverStripe\Dev\BuildTask;
+use SilverStripe\Versioned\Versioned;
+use SilverStripe\Core\ClassInfo;
+use SilverStripe\CMS\Model\SiteTree;
+
 /**
  * Used to list all unique page and content block types
  *
@@ -14,10 +22,10 @@ class ListUniquePageTypesTask extends BuildTask
     protected $description = 'List an example of each page type to help with regression testing';
 
     protected $excludeClasses = [
-        'BaseHomePage',
-        'RedirectorPage',
-        'VirtualPage',
-        'SubsitesVirtualPage'
+        'BaseHomePage', // TODO: this
+        'SilverStripe\CMS\Model\RedirectorPage',
+        'SilverStripe\CMS\Model\VirtualPage',
+        'SubsitesVirtualPage' // TODO: subsite
     ];
 
     protected $pageIDsToBlockClassNames = [];
@@ -32,7 +40,7 @@ class ListUniquePageTypesTask extends BuildTask
             return;
         }
         $oldMode = Versioned::get_reading_mode();
-        Versioned::reading_stage('Live');
+        Versioned::set_reading_mode('Stage.Live');
         $this->echoStyles();
         $subsiteIDs = [-1];
         if (class_exists('Subsite')) {
@@ -128,14 +136,14 @@ EOT;
 
     protected function getPages()
     {
-        $classes = ClassInfo::subclassesFor('Page');
+        $classes = ClassInfo::subclassesFor('SilverStripe\CMS\Model\SiteTree');
         sort($classes);
         $pages = [];
         foreach ($classes as $class) {
             if (in_array($class, $this->excludeClasses)) {
                 continue;
             }
-            $page = Page::get()->filter('ClassName', $class)->first();
+            $page = SiteTree::get()->filter('ClassName', $class)->first();
             if (!$page) {
                 continue;
             }
