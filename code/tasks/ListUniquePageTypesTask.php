@@ -195,10 +195,10 @@ EOT;
                 ON
                     Page_Live.ID = SiteTree_Live.ID
                 WHERE
-                  $subsiteWhere
-                  Element_Live.ClassName = '$escapedElementalClass'
+                    $subsiteWhere
+                    Element_Live.ClassName = '$escapedElementalClass'
                 AND
-                  SiteTree_Live.ClassName NOT IN ('$siteTreeNotIn')
+                    SiteTree_Live.ClassName NOT IN ('$siteTreeNotIn')
                 LIMIT 1
 EOT;
             $query = DB::query($sql);
