@@ -5,9 +5,9 @@ namespace emteknetnz\UpgradeTools;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\ORM\DB;
 
-class RemoveDuplicateVersionTablesTask extends BuildTask
+class RemoveDuplicateVersionsTablesTask extends BuildTask
 {
-    protected $title = 'Remove Duplicate Version Tables Task';
+    protected $title = 'Remove Duplicate Versions Tables Task';
 
     protected $description = 'Check for and remove any _versions table where an identical _Versions table exists';
 
