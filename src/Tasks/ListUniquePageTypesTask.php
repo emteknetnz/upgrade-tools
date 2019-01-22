@@ -1,6 +1,6 @@
 <?php
 
-namespace emteknetnz\UpgradeTools;
+namespace emteknetnz\UpgradeTools\Tasks;
 
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Control\Director;

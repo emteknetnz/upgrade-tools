@@ -1,6 +1,6 @@
 <?php
 
-namespace emteknetnz\UpgradeTools;
+namespace emteknetnz\UpgradeTools\Tasks;
 
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\ORM\DB;
@@ -9,7 +9,7 @@ class RemoveDuplicateVersionsTablesTask extends BuildTask
 {
     protected $title = 'Remove Duplicate Versions Tables Task';
 
-    protected $description = 'Check for and remove any _versions table where an identical _Versions table exists';
+    protected $description = 'Check for and remove any _versions table where an identical _Versions table exists - Import a fresh SS3 sspak, then run this, then run /dev/build';
 
     /**
      * @param \SilverStripe\Control\HTTPRequest $request
