@@ -99,6 +99,7 @@ EOT;
         if (!isset($arr['config']['process-timeout'])) {
             $arr['config']['process-timeout'] = 600;
         }
+        ksort($arr['config']);
     }
 
     protected function sortTopLevel(array &$arr)
@@ -107,6 +108,7 @@ EOT;
             'name',
             'description',
             'type',
+            'license',
             'require',
             'require-dev',
             'repositories',
