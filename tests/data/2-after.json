@@ -1,0 +1,13 @@
+{
+    "name": "Test data",
+    "require": {
+        "abc/def": "^1",
+        "silverstripe/framework": "^3.6"
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/xyz/ghi.git"
+        }
+    ]
+}
