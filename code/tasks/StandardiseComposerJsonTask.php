@@ -2,6 +2,7 @@
 
 class StandardiseComposerJsonTask extends BuildTask
 {
+    protected $description = 'Standardise the composer.json file';
 
     protected $requirementKeys = [
         'require',
