@@ -1,6 +1,7 @@
 {
     "name": "Test data",
     "description": "My description",
+    "type": "project",
     "require": {
         "php": ">=7.1",
         "abc/def": "^1",

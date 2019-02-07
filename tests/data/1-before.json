@@ -1,6 +1,7 @@
 {
   "name": "Test data",
   "description": "My description",
+    "type": "project",
   "repositories": [{
      "type": "vcs",
      "url": "https://github.com/xyz/ghi.git"

@@ -24,7 +24,41 @@ class StandardiseComposerJsonTask extends BuildTask
      */
     public function run($request)
     {
-
+        $path = BASE_PATH . '/composer.json';
+        if (!file_exists($path)) {
+            echo "<p>composer.json does not exist</p>\n";
+            return;
+        }
+        echo <<<EOT
+            <p>Select a php version:</p>
+            <ul>
+                <li><a href='?phpversion=php56'>5.6</a></li>
+                <li><a href='?phpversion=php71'>7.1</a></li>
+            </ul>
+EOT;
+        $phpVersion = $request->getVar('phpversion');
+        if (!$phpVersion) {
+            return;
+        }
+        if (!in_array($phpVersion, array_keys($this->phpVersionRequires))) {
+            echo "<p>Invalid PHP Version</p>\n";
+            return;
+        }
+        $jsonStr = file_get_contents($path);
+        $newJsonStr = $this->standardiseJsonString($jsonStr, $phpVersion);
+        if ($jsonStr == $newJsonStr) {
+            echo "<p>Existing composer.json file has already been standardised to $phpVersion</p>";
+            return;
+        }
+        if ($request->getVar('convert')) {
+            file_put_contents($path, $newJsonStr);
+            echo "<p>composer.json file has been standardised to $phpVersion</p>\n";
+            return;
+        }
+        echo <<<EOT
+            <p><a href='?phpversion=$phpVersion&convert=1'>Click here</a> to convert composer.json to this:</p>
+            <pre style="background-color:#eee;border:1px solid #ddd;padding:10px;">$newJsonStr</pre>
+EOT;
     }
 
     protected function standardiseJsonString($jsonStr, $phpVersion)
@@ -50,9 +84,7 @@ class StandardiseComposerJsonTask extends BuildTask
         if (!isset($arr['require'])) {
             return;
         }
-        if (!isset($arr['require']['php'])) {
-            $arr['require']['php'] = $this->phpVersionRequires[$phpVersion];
-        }
+        $arr['require']['php'] = $this->phpVersionRequires[$phpVersion];
     }
 
     protected function updateConfig(array &$arr, $phpVersion)
@@ -63,9 +95,7 @@ class StandardiseComposerJsonTask extends BuildTask
         if (!isset($arr['config']['platform'])) {
             $arr['config']['platform'] = [];
         }
-        if (!isset($arr['config']['platform']['php'])) {
-            $arr['config']['platform']['php'] = $this->phpVersionPlatforms[$phpVersion];
-        }
+        $arr['config']['platform']['php'] = $this->phpVersionPlatforms[$phpVersion];
         if (!isset($arr['config']['process-timeout'])) {
             $arr['config']['process-timeout'] = 600;
         }
@@ -76,6 +106,7 @@ class StandardiseComposerJsonTask extends BuildTask
         $orderedKeys = array_flip([
             'name',
             'description',
+            'type',
             'require',
             'require-dev',
             'repositories',
