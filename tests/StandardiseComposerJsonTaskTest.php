@@ -13,7 +13,7 @@ class StandardiseComposerJsonTaskTest extends SapphireTest
         $method->setAccessible(true);
         $inst = StandardiseComposerJsonTask::create();
         $expected = file_get_contents("$dataDir/2-after.json");
-        $actual = $method->invokeArgs($inst, [$jsonStr]);
+        $actual = $method->invokeArgs($inst, [$jsonStr, 'php71']);
         $this->assertEquals($expected, $actual);
     }
 }

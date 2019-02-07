@@ -1,13 +1,64 @@
 {
     "name": "Test data",
+    "description": "My description",
     "require": {
+        "php": ">=7.1",
         "abc/def": "^1",
-        "silverstripe/framework": "^3.6"
+        "ghi/jkl": "~1.2",
+        "silverstripe/framework": "^3",
+        "zyx/wvu": "dev-master#123456abcdef"
+    },
+    "require-dev": {
+        "emteknetnz/upgrade-tools": "^2",
+        "silverstripe/fulltextsearch-localsolr": "dev-master"
     },
     "repositories": [
         {
             "type": "vcs",
             "url": "https://github.com/xyz/ghi.git"
         }
-    ]
+    ],
+    "prefer-stable": true,
+    "minimum-stability": "dev",
+    "config": {
+        "platform": {
+            "php": "7.1.24"
+        },
+        "process-timeout": 600
+    },
+    "autoload": {
+        "psr-4": {
+            "MyApp\\": "app/src/MyApp"
+        },
+        "classmap": [
+            "app/src/Page.php",
+            "app/src/PageController.php"
+        ]
+    },
+    "extra": {
+        "project-files": [
+            "themes/my-theme/*"
+        ],
+        "project-files-installed": [
+            "app/.htaccess",
+            "app/_config.php",
+            "app/_config/blog.yml",
+            "app/_config/environmentcheck.yml",
+            "app/_config/mysite.yml",
+            "app/_config/oembed.yml",
+            "app/src/Page.php",
+            "app/src/PageController.php"
+        ],
+        "public-files-installed": [
+            ".htaccess",
+            "index.php",
+            "install-frameworkmissing.html",
+            "install.php",
+            "web.config"
+        ],
+        "expose": [
+            "app/images",
+            "themes/my-theme/dist"
+        ]
+    }
 }

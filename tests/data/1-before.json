@@ -1,11 +1,53 @@
 {
   "name": "Test data",
+  "description": "My description",
   "repositories": [{
      "type": "vcs",
      "url": "https://github.com/xyz/ghi.git"
   }],
+  "require-dev": {
+    "silverstripe/fulltextsearch-localsolr": "dev-master",
+    "emteknetnz/upgrade-tools": "^2"
+  },
   "require": {
     "silverstripe/framework": "^3.6",
-    "abc/def": "^1"
+    "abc/def": "^1",
+    "ghi/jkl": "~1.2",
+    "zyx/wvu": "dev-master#123456abcdef"
+  },
+  "extra": {
+    "project-files": [
+      "themes/my-theme/*"
+    ],
+    "project-files-installed": [
+      "app/.htaccess",
+      "app/_config.php",
+      "app/_config/blog.yml",
+      "app/_config/environmentcheck.yml",
+      "app/_config/mysite.yml",
+      "app/_config/oembed.yml",
+      "app/src/Page.php",
+      "app/src/PageController.php"
+    ],
+    "public-files-installed": [
+      ".htaccess",
+      "index.php",
+      "install-frameworkmissing.html",
+      "install.php",
+      "web.config"
+    ],
+    "expose": [
+      "app/images",
+      "themes/my-theme/dist"
+    ]
+  },
+  "autoload": {
+    "psr-4": {
+      "MyApp\\": "app/src/MyApp"
+    },
+    "classmap": [
+      "app/src/Page.php",
+      "app/src/PageController.php"
+    ]
   }
 }
