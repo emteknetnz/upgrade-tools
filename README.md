@@ -15,3 +15,5 @@ Uses branch master-ss4
 ```
 composer require --dev emteknetnz/upgrade-tools:^2
 ```
+
+The master branch only contains this readme
