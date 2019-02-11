@@ -18,8 +18,6 @@ use SilverStripe\Versioned\Versioned;
  */
 class ListUniquePageTypesTask extends BuildTask
 {
-    protected $title = 'List Unique Page Types';
-
     protected $description = 'List an example of each page type to help with regression testing';
 
     protected $excludedPageClasses = [

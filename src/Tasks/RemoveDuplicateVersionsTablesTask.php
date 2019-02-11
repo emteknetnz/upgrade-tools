@@ -7,8 +7,6 @@ use SilverStripe\ORM\DB;
 
 class RemoveDuplicateVersionsTablesTask extends BuildTask
 {
-    protected $title = 'Remove Duplicate Versions Tables Task';
-
     protected $description = 'Check for and remove any _versions table where an identical _Versions table exists - Import a fresh SS3 sspak, then run this, then run /dev/build';
 
     /**
