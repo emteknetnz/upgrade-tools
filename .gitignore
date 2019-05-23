@@ -1,1 +1,10 @@
+_ss_environment.php
+composer.lock
+Vagrantfile
 /.idea/
+/.vagrant/
+/cms/
+/framework/
+/reports/
+/siteconfig/
+/vendor/
