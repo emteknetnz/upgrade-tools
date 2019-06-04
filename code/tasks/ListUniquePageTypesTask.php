@@ -161,6 +161,12 @@ EOT;
             if (!class_exists($baseClass)) {
                 continue;
             }
+            if ($baseClass == 'Block') {
+                $query = DB::query("SHOW TABLES LIKE 'SiteTree_Blocks'");
+                if ($query->numRecords() == 0) {
+                    continue;
+                }
+            }
             $classes = ClassInfo::subclassesFor($baseClass);
             foreach ($classes as $class) {
                 if (in_array($class, $this->excludeClasses)) {
