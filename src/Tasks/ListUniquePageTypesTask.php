@@ -3,10 +3,12 @@
 namespace emteknetnz\UpgradeTools\Tasks;
 
 use SilverStripe\CMS\Model\SiteTree;
+use SilverStripe\Control\Controller;
 use SilverStripe\Control\Director;
 use SilverStripe\Core\ClassInfo;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\ORM\DB;
+use SilverStripe\Subsites\Model\Subsite;
 use SilverStripe\Versioned\Versioned;
 
 /**
@@ -86,12 +88,12 @@ class ListUniquePageTypesTask extends BuildTask
                 $pagePlusBlockClasses[] = $pagePlusBlockClass;
                 return true;
             });
-            $this->echoTable($pages);
+            $this->echoTable($pages, $subsiteID);
         }
         Versioned::set_reading_mode($oldMode);
     }
 
-    protected function echoTable($pages) {
+    protected function echoTable($pages, $subsiteID) {
         /** @var Subsite $subsite */
         /** @var Page $page */
         $absBaseUrl = Director::absoluteBaseURL();
@@ -130,10 +132,26 @@ EOT;
         sort($frontEndUrls);
 
         // wraith capture:
-        $baselineDomain = rtrim(preg_replace('%^(.+)\.(.+)$%', '$1-baseline.$2', $absBaseUrl), '/');
-        $featureDomain = rtrim($absBaseUrl, '/');
+        $baseUrl = $absBaseUrl;
+        $subsite = Subsite::get()->byID($subsiteID);
+
+        if ($subsite) {
+            $protocol = Director::is_https(Controller::curr()->getRequest()) ? 'https' : 'http';
+            $baseUrl = $protocol . '://' . $subsite->getPrimaryDomain();
+        }
+        if (preg_match('%baseline%', $baseUrl)) {
+            $baselineDomain = rtrim($baseUrl, '/');
+            $upgradedDomain = str_replace('baseline', 'upgraded', $baselineDomain);
+        } else if (preg_match('%upgraded%', $baseUrl)) {
+            $upgradedDomain = rtrim($baseUrl, '/');
+            $baselineDomain = str_replace('upgraded', 'baseline', $upgradedDomain);
+        } else {
+            $baselineDomain = rtrim(preg_replace('%^(.+)\.(.+)$%', '$1-baseline.$2', $baseUrl), '/');
+            $upgradedDomain = rtrim($baseUrl, '/');
+        }
+
         echo "<h3>Urls for wraith configs/capture.yaml</h3>";
-        echo "<pre class='yml'>" . $this->createWraithCaptureYml($baselineDomain, $featureDomain, $frontEndUrls) . "</pre>";
+        echo "<pre class='yml'>" . $this->createWraithCaptureYml($baselineDomain, $upgradedDomain, $frontEndUrls) . "</pre>";
 
         // raw paths:
         echo "<h3>Raw paths</h3>";
@@ -294,7 +312,7 @@ EOT;
 EOT;
     }
 
-    protected function createWraithCaptureYml($baselineDomain, $featureDomain, array $paths)
+    protected function createWraithCaptureYml($baselineDomain, $upgradedDomain, array $paths)
     {
         $pathsYml = $this->createPathsYml($paths);
         return <<<EOT
@@ -302,7 +320,7 @@ EOT;
         
 domains:
   baseline: '$baselineDomain'
-  feature:  '$featureDomain'
+  upgraded: '$upgradedDomain'
 
 paths:
 $pathsYml
