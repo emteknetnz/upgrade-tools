@@ -178,44 +178,66 @@ EOT;
                 $escapedPageClasses[] = addslashes($pageClass);
             }
             $siteTreeNotIn = implode("','", $escapedPageClasses);
-            $sql = <<<EOT
-                SELECT
-                    SiteTree_Live.ID as ID,
-                    SiteTree_Live.ClassName as ClassName,
-                    Element_Live.ClassName as BlockClassName
-                FROM
-                    Element_Live
-                INNER JOIN
-                    Page_Live
-                ON
-                    Element_Live.ParentID = Page_Live.ElementalAreaID
-                INNER JOIN
-                    SiteTree_Live
-                ON
-                    Page_Live.ID = SiteTree_Live.ID
-                WHERE
-                    $subsiteWhere
-                    Element_Live.ClassName = '$escapedElementalClass'
-                AND
-                    SiteTree_Live.ClassName NOT IN ('$siteTreeNotIn')
-                LIMIT 1
+
+            $pageClasses = ClassInfo::subclassesFor('Page');
+            foreach ($pageClasses as $pageClass) {
+
+                $pos = strrpos($pageClass, '\\');
+                $pageClassNoNamespace = $pos ? substr($pageClass, $pos + 1) : $pageClass;
+
+                $tableName = $pageClassNoNamespace . '_Live';
+                if (!ClassInfo::hasTable($tableName)) {
+                    continue;
+                }
+
+                $query = DB::query("SELECT * FROM $tableName");
+                $r = $query->first();
+                if (!$r) {
+                    continue;
+                }
+                if (!isset($r['ElementalAreaID'])) {
+                    continue;
+                }
+
+                $sql = <<<EOT
+                    SELECT
+                        SiteTree_Live.ID as ID,
+                        SiteTree_Live.ClassName as ClassName,
+                        Element_Live.ClassName as BlockClassName
+                    FROM
+                        Element_Live
+                    INNER JOIN
+                        $tableName
+                    ON
+                        Element_Live.ParentID = $tableName.ElementalAreaID
+                    INNER JOIN
+                        SiteTree_Live
+                    ON
+                        $tableName.ID = SiteTree_Live.ID
+                    WHERE
+                        $subsiteWhere
+                        Element_Live.ClassName = '$escapedElementalClass'
+                    AND
+                        SiteTree_Live.ClassName NOT IN ('$siteTreeNotIn')
+                    LIMIT 1
 EOT;
-            $query = DB::query($sql);
-            $r = $query->first();
-            if (!$r) {
-                continue;
+                $query = DB::query($sql);
+                $r = $query->first();
+                if (!$r) {
+                    continue;
+                }
+                $page = SiteTree::get()->byID($r['ID']);
+                if (!$page) {
+                    continue;
+                }
+                $pages[] = [
+                    'id'         => $page->ID,
+                    'class'      => $r['ClassName'],
+                    'blockclass' => $r['BlockClassName'],
+                    'frontend'   => $page->Link(),
+                    'cms'        => str_replace('?Locale=en_NZ', '', '/' . $page->CMSEditLink())
+                ];
             }
-            $page = SiteTree::get()->byID($r['ID']);
-            if (!$page) {
-                continue;
-            }
-            $pages[] = [
-                'id'         => $page->ID,
-                'class'      => $r['ClassName'],
-                'blockclass' => $r['BlockClassName'],
-                'frontend'   => $page->Link(),
-                'cms'        => str_replace('?Locale=en_NZ', '', '/' . $page->CMSEditLink())
-            ];
         }
         return $pages;
     }
