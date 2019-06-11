@@ -155,7 +155,7 @@ EOT;
             if (!isset($arr[$key])) {
                 continue;
             }
-            $arr[$key] = preg_replace('%^\^([0-9]+)\..+$%', '^$1', $arr[$key]);
+            $arr[$key] = preg_replace('%^\^([1-9][0-9]*)\..+$%', '^$1', $arr[$key]);
         }
     }
 
