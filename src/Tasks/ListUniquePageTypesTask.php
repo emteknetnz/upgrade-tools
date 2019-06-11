@@ -69,15 +69,21 @@ class ListUniquePageTypesTask extends BuildTask
             // unique page ids & classes
             $pageIDs = [];
             $pageClasses = [];
-            $pages = array_filter($pages, function($page) use (&$pageIDs, &$pageClasses) {
+            $pagePlusBlockClasses = [];
+            $pages = array_filter($pages, function($page) use (&$pageIDs, &$pageClasses, &$pagePlusBlockClasses) {
                 if (in_array($page['id'], $pageIDs)) {
                     return false;
                 }
                 if (in_array($page['class'], $pageClasses) && $page['blockclass'] == '') {
                     return false;
                 }
+                $pagePlusBlockClass = $page['class'] . $page['blockclass'];
+                if (in_array($pagePlusBlockClass, $pagePlusBlockClasses)) {
+                    return false;
+                }
                 $pageIDs[] = $page['id'];
                 $pageClasses[] = $page['class'];
+                $pagePlusBlockClasses[] = $pagePlusBlockClass;
                 return true;
             });
             $this->echoTable($pages);
