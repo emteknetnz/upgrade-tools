@@ -8,7 +8,6 @@ use SilverStripe\Control\Director;
 use SilverStripe\Core\ClassInfo;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\ORM\DB;
-use SilverStripe\Subsites\Model\Subsite;
 use SilverStripe\Versioned\Versioned;
 
 /**
@@ -133,11 +132,14 @@ EOT;
 
         // wraith capture:
         $baseUrl = $absBaseUrl;
-        $subsite = Subsite::get()->byID($subsiteID);
 
-        if ($subsite) {
-            $protocol = Director::is_https(Controller::curr()->getRequest()) ? 'https' : 'http';
-            $baseUrl = $protocol . '://' . $subsite->getPrimaryDomain();
+        $subsiteSingleton = $this->getSubsiteSingleton();
+        if ($subsiteSingleton) {
+            $subsite = $subsiteSingleton::get()->byID($subsiteID);
+            if ($subsite) {
+                $protocol = Director::is_https(Controller::curr()->getRequest()) ? 'https' : 'http';
+                $baseUrl = $protocol . '://' . $subsite->getPrimaryDomain();
+            }
         }
         if (preg_match('%baseline%', $baseUrl)) {
             $baselineDomain = rtrim($baseUrl, '/');
