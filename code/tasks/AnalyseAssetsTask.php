@@ -9,23 +9,32 @@ class AnalyseAssetsTask extends BuildTask
      */
     public function run($request): void
     {
-        $sort = $request->getVar('sort') ?: 'MB';
-
         // styles
         $this->echoStyles();
 
+        // options
+        $this->echoOptions();
+
         // assets
+        if ($request->getVar('which') == 'assets') {
+            $this->showAssets();
+        }
 
         // database
-        $this->showTables($sort);
+        if ($request->getVar('which') == 'database') {
+            $sort = $request->getVar('sort') ?: 'MB';
+            $this->showDatabase($sort);
+        }
+
+
     }
 
-    private function showTables(string $sort): void
+    private function showDatabase(string $sort): void
     {
         $lines = ['<th>' . implode('</th><th>', [
-            '<a href="?sort=Name">Name</a>',
-            '<a href="?sort=Rows">Rows</a>',
-            '<a href="?sort=MB">MB</a>'
+            '<a href="?which=database&sort=Name">Name</a>',
+            '<a href="?which=database&sort=Rows">Rows</a>',
+            '<a href="?which=database&sort=MB">MB</a>'
         ]) . '</th>'];
         foreach ($this->getTableData($sort) as $r) {
             $lines[] = '<td>' . implode('</td><td>', [$r['Name'], $r['Rows'], $r['MB']]) . '</td>';
@@ -53,6 +62,17 @@ class AnalyseAssetsTask extends BuildTask
             $data = array_reverse($data);
         }
         return $data;
+    }
+
+    private function echoOptions(): void
+    {
+        echo <<<EOT
+            <p>
+                <a href="?which=assets">Assets</a> |
+                <a href="?which=database">Database</a>
+            </p>
+EOT;
+
     }
 
     private function echoStyles(): void
