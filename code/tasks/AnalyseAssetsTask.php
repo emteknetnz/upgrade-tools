@@ -23,7 +23,7 @@ class AnalyseAssetsTask extends BuildTask
         // database
         if ($request->getVar('which') == 'database') {
             $sort = $request->getVar('sort') ?: 'MB';
-            $this->showDatabase($sort);
+            $this->echoDatabase($sort);
         }
     }
 
@@ -44,48 +44,54 @@ class AnalyseAssetsTask extends BuildTask
                 continue;
             }
             $path = realpath($dir . DIRECTORY_SEPARATOR . $value);
-
-            $parts = array_filter(explode(DIRECTORY_SEPARATOR, str_replace(ASSETS_PATH, '', dirname($path))));
-            $this->thinger($results, $parts);
-
             if (is_dir($path)) {
-                if (!isset($results[$path])) {
-                    $results[$path] = [];
-                }
                 $this->getDirContents($path, $results);
             } else {
-                $results[$path] = [
-                    'filename' => $value,
-                    'filesize' => filesize($path)
-                ];
+                $this->updateResults($results, $this->getParts($path), filesize($path), basename($path));
             }
-
-//            if (!is_dir($path)) {
-//                // filename
-//                // $results[] = $path;
-//                // filesize
-//                $results[] = filesize($path);
-//            } else {
-//                $this->getDirContents($path, $results);
-//                $results[] = $path;
-//            }
         }
         return $results;
     }
 
     /**
-     * @param array $results
-     * @param array $parts
+     * /var/www/mysite/www/assets/Uploads/SomeDir => ['Uploads', 'Somedir']
+     *
+     * @param string $path
+     * @return array
      */
-    private function thinger(array &$results, array $parts)
+    private function getParts($path)
     {
-        $c = count($parts);
-        if ($c > 1) {
-            //if (!)
-        }
+        return array_merge(array_filter(explode(DIRECTORY_SEPARATOR, str_replace(ASSETS_PATH, '', dirname($path)))));
     }
 
-    private function showDatabase($sort)
+    /**
+     * ['Uploads', 'SomeDir'] => $results['Uploads'] = ['dirs' => [
+     *   'SomeDir' => ['dirs' => [], 'files' => [], 'size' => 0]
+     * ], 'files' => [], 'size' => 0]
+     *
+     * @param array $results
+     * @param array $parts
+     * @param int $filesize
+     * @param string $filename
+     */
+    private function updateResults(array &$results, array $parts, $filesize, $filename)
+    {
+        $part = array_shift($parts);
+        if (!$part) {
+            return;
+        }
+        if (!isset($results[$part])) {
+            $results[$part] = ['dirs' => [], 'files' => [], 'size' => 0];
+        }
+        if (empty($parts)) {
+            $results[$part]['files'][] = $filename;
+        } else {
+            $this->updateResults($results[$part]['dirs'], $parts, $filesize, $filename);
+        }
+        $results[$part]['size'] += $filesize;
+    }
+
+    private function echoDatabase($sort)
     {
         $lines = ['<th>' . implode('</th><th>', [
             '<a href="?which=database&sort=Name">Name</a>',
