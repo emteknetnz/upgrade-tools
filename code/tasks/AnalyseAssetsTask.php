@@ -1,5 +1,12 @@
 <?php
 
+// TODO: look to get this as a job that runs in the background (queuedjob), probably overnight
+// possibly add combined file size of directories as new field on File (extension)
+// - depends about file manager UI re showing thumbnails, _versions, _resampled folders
+// - otherwise, just keep as standalone report with its own UI
+// intention is to run this on prod servers for site owners to browse at their leisure, not just a dev tool
+// will probably split this off as its own module
+
 class AnalyseAssetsTask extends BuildTask
 {
     protected $description = 'List assets';
