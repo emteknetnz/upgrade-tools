@@ -17,7 +17,7 @@ class AnalyseAssetsTask extends BuildTask
 
         // assets
         if ($request->getVar('which') == 'assets') {
-            $this->showAssets();
+            $this->echoAssets();
         }
 
         // database
@@ -27,9 +27,48 @@ class AnalyseAssetsTask extends BuildTask
         }
     }
 
-    private function showAssets()
+    private function echoAssets()
     {
-        var_dump($this->getDirContents(ASSETS_PATH));
+        $results = $this->getDirContents(ASSETS_PATH);
+        $html = $this->generateAssetsHtml($results);
+        echo implode('', $html);
+    }
+
+    /**
+     * @param array $results
+     * @param int $level
+     * @return array
+     */
+    private function generateAssetsHtml($results)
+    {
+        $html = [];
+        $html[] = "<div class='assets-dirs' style='padding-left:10px'>";
+        foreach ($results as $part => $data) {
+            $dirsize = $this->formatBytes($data['dirsize']);
+            $style = in_array($part, ['_resampled', '_versions']) ? 'display:none' : '';
+            $style = '';
+            $html[] = <<<EOT
+                <div class='assets-dir' style="$style">
+                    <span class='assets-dirname'>$part</span> -
+                    <span class='assets-dirsize'>$dirsize</span>
+EOT;
+            $html = array_merge($html, $this->generateAssetsHtml($data['dirs']));
+            $display = 'block';
+            $html[] = "<div class='assets-files' style='display:$display;padding-left:10px'>";
+            foreach ($data['files'] as $arr) {
+                $filename = $arr['filename'];
+                $filesize = $this->formatBytes($arr['filesize']);
+                $html[] = <<<EOT
+                    <div class='assets-file'>
+                        <span class='assets-filename'>$filename</span> -
+                        <span class='assets-filesize'>$filesize</span>
+                    </div>
+EOT;
+            }
+            $html[] = '</div></div>';
+        }
+        $html[] = '</div>';
+        return $html;
     }
 
     /**
@@ -81,14 +120,14 @@ class AnalyseAssetsTask extends BuildTask
             return;
         }
         if (!isset($results[$part])) {
-            $results[$part] = ['dirs' => [], 'files' => [], 'size' => 0];
+            $results[$part] = ['dirs' => [], 'dirsize' => 0, 'files' => []];
         }
         if (empty($parts)) {
-            $results[$part]['files'][] = $filename;
+            $results[$part]['files'][] = ['filename' => $filename, 'filesize' => $filesize];
         } else {
             $this->updateResults($results[$part]['dirs'], $parts, $filesize, $filename);
         }
-        $results[$part]['size'] += $filesize;
+        $results[$part]['dirsize'] += $filesize;
     }
 
     private function echoDatabase($sort)
@@ -127,6 +166,13 @@ class AnalyseAssetsTask extends BuildTask
         return $data;
     }
 
+    private function formatBytes($size, $precision = 1)
+    {
+        $base = log($size, 1024);
+        $suffixes = array('', 'KB', 'MB', 'GB', 'TB');
+        return round(pow(1024, $base - floor($base)), $precision) .' '. $suffixes[floor($base)];
+    }
+
     private function echoOptions()
     {
         echo <<<EOT
@@ -151,6 +197,19 @@ EOT;
                 th, td {
                     border: 1px solid #ccc;
                     padding: 5px;
+                }
+                .assets-dir {}
+                .assets-dirname {
+                    color: blue;
+                }
+                .assets-file {}
+                .assets-filename {
+                    color: green;
+                }
+                .assets-dirsize,
+                .assets-filesize {
+                    color: purple;
+                    font-size: 13px;
                 }
             </style>
 EOT;
