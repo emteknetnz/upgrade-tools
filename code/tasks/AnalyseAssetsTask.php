@@ -226,13 +226,17 @@ EOT;
                 document.addEventListener('click', function (event) {
                     var el = event.target;
                     // user may have clicked on .assets-diricon, go up one so that el is .assets-dir
-                    el = (el.className !== 'assets-dir' && el.parentNode) ? el.parentNode : el;
-                    if (el.className === 'assets-dir') {
-                        for (var i = 0; i < el.childNodes.length; i++) {
-                            var childEl = el.childNodes[i];
-                            if (childEl.nodeType === 1 && (childEl.className === 'assets-dirs' || childEl.className === 'assets-files')) {
-                                childEl.style.display = (childEl.style.display === 'block' || !childEl.style.display) ? 'none' : 'block';
-                            }
+                    el = (!el.classList.contains('assets-dir') && el.parentNode) ? el.parentNode : el;
+                    if (!el.classList.contains('assets-dir')) {
+                        return;
+                    }
+                    for (var i = 0; i < el.childNodes.length; i++) {
+                        var childEl = el.childNodes[i];
+                        if (childEl.nodeType !== 1) {
+                            continue;
+                        }
+                        if (childEl.classList.contains('assets-dirs') || childEl.classList.contains('assets-files')) {
+                            childEl.style.display = childEl.style.display === 'none' ? 'block' : 'none';
                         }
                     }
                 });
