@@ -51,38 +51,38 @@ class AnalyseAssetsTask extends BuildTask
      */
     private function generateAssetsHtml($results, $depth = 0)
     {
-        $dirIconClosed = '>';
-        $dirIconOpen = '=';
+        $dirIcon = '>';
         $fileIcon = '-';
         $html = [];
         $display = $depth > 0 ? 'none' : 'block';
         $html[] = "<div class='assets-dirs' style='display:$display;'>";
         foreach ($results as $part => $data) {
             $dirsize = $this->formatBytes($data['dirsize']);
-            $dirIcon = $depth > 0 ? $dirIconClosed : $dirIconOpen;
-            $paddingLeft = ($depth * 15) . 'px';
-            $html[] = <<<EOT
-                <div class='assets-dir'>
-                    <div class='assets-dir-spans'>
-                        <span class='assets-diricon' style='display:inline-block;padding-left:$paddingLeft;'>$dirIcon</span>
-                        <span class='assets-dirname'>$part</span> -
-                        <span class='assets-dirsize'>$dirsize</span>
-                    </div>
-EOT;
+            $padding = str_repeat('&nbsp;', $depth * 2);
+            $html[] = implode('', [
+                "<div class='assets-dir closed'>",
+                "<div class='assets-dir-spans'>",
+                "<span class='assets-dirpadding'>$padding</span>",
+                "<span class='assets-diricon'>$dirIcon</span>",
+                "<span class='assets-dirname'>&nbsp;$part</span> - ",
+                "<span class='assets-dirsize'>$dirsize</span>",
+                "</div>"
+            ]) ;
             $html = array_merge($html, $this->generateAssetsHtml($data['dirs'], $depth + 1));
             $display = 'none';
-            $paddingLeft = (($depth + 1) * 15) . 'px';
+            $padding = str_repeat('&nbsp;', $depth * 2  + 2);
             $html[] = "<div class='assets-files' style='display:$display;'>";
             foreach ($data['files'] as $arr) {
                 $filename = $arr['filename'];
                 $filesize = $this->formatBytes($arr['filesize']);
-                $html[] = <<<EOT
-                    <div class='assets-file'>
-                        <span class='assets-fileicon' style='display:inline-block;padding-left:$paddingLeft;'>$fileIcon</span>
-                        <span class='assets-filename'>$filename</span> -
-                        <span class='assets-filesize'>$filesize</span>
-                    </div>
-EOT;
+                $html[] = implode('', [
+                    "<div class='assets-file'>",
+                    "<span class='assets-filepadding'>$padding</span>",
+                    "<span class='assets-fileicon'>$fileIcon</span>",
+                    "<span class='assets-filename'>&nbsp;$filename</span> - ",
+                    "<span class='assets-filesize'>$filesize</span>",
+                    "</div>"
+                ]);
             }
             $html[] = '</div></div>';
         }
@@ -231,18 +231,18 @@ EOT;
                     var el, i, isAssetsDir, childEl;
                     el = event.target;
                     i = 3;
-                    isAssetsDir = false;
+                    elIsAssetsDir = false;
                     do {
                         if (el.classList.contains('assets-files')) {
                             return;
                         }
-                        isAssetsDir = el.classList.contains('assets-dir');
-                        if (isAssetsDir || !el.parentNode) {
+                        elIsAssetsDir = el.classList.contains('assets-dir');
+                        if (elIsAssetsDir || !el.parentNode) {
                             break;
                         }
                         el = el.parentNode;
                     } while (--i >= 0);
-                    if (!isAssetsDir) {
+                    if (!elIsAssetsDir) {
                         return;
                     }
                     for (i = 0; i < el.childNodes.length; i++) {
@@ -251,7 +251,15 @@ EOT;
                             continue;
                         }
                         if (childEl.classList.contains('assets-dirs') || childEl.classList.contains('assets-files')) {
-                            childEl.style.display = childEl.style.display === 'none' ? 'block' : 'none';
+                            if (childEl.style.display === 'block') {
+                                childEl.style.display = 'none';
+                                el.classList.remove('open');
+                                el.classList.add('closed')
+                            } else {
+                                childEl.style.display = 'block';
+                                el.classList.remove('closed');
+                                el.classList.add('open')
+                            }
                         }
                     }
                 });
@@ -295,6 +303,12 @@ EOT;
                 .assets-filesize {
                     color: purple;
                     font-size: 13px;
+                }
+                .assets-dir.open .assets-diricon {
+                    background-color:lightgreen;
+                }
+                .assets-dir.closed .assets-diricon {
+                    background-color:lightblue;
                 }
             </style>
 EOT;
