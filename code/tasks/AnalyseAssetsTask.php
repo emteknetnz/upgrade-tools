@@ -32,6 +32,9 @@ class AnalyseAssetsTask extends BuildTask
             $sort = $request->getVar('sort') ?: 'MB';
             $this->echoDatabase($sort);
         }
+
+        // script
+        $this->echoScript();
     }
 
     private function echoAssets()
@@ -46,27 +49,32 @@ class AnalyseAssetsTask extends BuildTask
      * @param int $level
      * @return array
      */
-    private function generateAssetsHtml($results)
+    private function generateAssetsHtml($results, $depth = 0)
     {
+        $dirIconClosed = '>';
+        $dirIconOpen = '=';
+        $fileIcon = '-';
         $html = [];
-        $html[] = "<div class='assets-dirs' style='padding-left:10px'>";
+        $display = $depth > 0 ? 'none' : 'block';
+        $html[] = "<div class='assets-dirs' style='display:$display;padding-left:10px'>";
         foreach ($results as $part => $data) {
             $dirsize = $this->formatBytes($data['dirsize']);
-            $style = in_array($part, ['_resampled', '_versions']) ? 'display:none' : '';
-            $style = '';
+            $dirIcon = $depth > 0 ? $dirIconClosed : $dirIconOpen;
             $html[] = <<<EOT
-                <div class='assets-dir' style="$style">
+                <div class='assets-dir' style="border:1px solid #ddd;">
+                    <span class='assets-diricon'>$dirIcon</span>
                     <span class='assets-dirname'>$part</span> -
                     <span class='assets-dirsize'>$dirsize</span>
 EOT;
-            $html = array_merge($html, $this->generateAssetsHtml($data['dirs']));
-            $display = 'block';
-            $html[] = "<div class='assets-files' style='display:$display;padding-left:10px'>";
+            $html = array_merge($html, $this->generateAssetsHtml($data['dirs'], $depth + 1));
+            $display = 'none';
+            $html[] = "<div class='assets-files' style='display:$display;padding-left:15px'>";
             foreach ($data['files'] as $arr) {
                 $filename = $arr['filename'];
                 $filesize = $this->formatBytes($arr['filesize']);
                 $html[] = <<<EOT
                     <div class='assets-file'>
+                        <span class='assets-fileicon'>$fileIcon</span>
                         <span class='assets-filename'>$filename</span> -
                         <span class='assets-filesize'>$filesize</span>
                     </div>
@@ -209,6 +217,29 @@ EOT;
 
     }
 
+    private function echoScript()
+    {
+        echo <<<EOT
+            <script>
+                // toggle child .assets-dirs and .asset-files visibilty
+                // use event delegation for better performance
+                document.addEventListener('click', function (event) {
+                    var el = event.target;
+                    // user may have clicked on .assets-diricon, go up one so that el is .assets-dir
+                    el = (el.className !== 'assets-dir' && el.parentNode) ? el.parentNode : el;
+                    if (el.className === 'assets-dir') {
+                        for (var i = 0; i < el.childNodes.length; i++) {
+                            var childEl = el.childNodes[i];
+                            if (childEl.nodeType === 1 && (childEl.className === 'assets-dirs' || childEl.className === 'assets-files')) {
+                                childEl.style.display = (childEl.style.display === 'block' || !childEl.style.display) ? 'none' : 'block';
+                            }
+                        }
+                    }
+                });
+            </script>
+EOT;
+    }
+
     private function echoStyles()
     {
         echo <<<EOT
@@ -223,7 +254,9 @@ EOT;
                     border: 1px solid #ccc;
                     padding: 5px;
                 }
-                .assets-dir {}
+                .assets-dir {
+                    cursor: pointer;
+                }
                 .assets-dirname {
                     color: blue;
                 }
