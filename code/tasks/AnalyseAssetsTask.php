@@ -56,25 +56,29 @@ class AnalyseAssetsTask extends BuildTask
         $fileIcon = '-';
         $html = [];
         $display = $depth > 0 ? 'none' : 'block';
-        $html[] = "<div class='assets-dirs' style='display:$display;padding-left:10px'>";
+        $html[] = "<div class='assets-dirs' style='display:$display;'>";
         foreach ($results as $part => $data) {
             $dirsize = $this->formatBytes($data['dirsize']);
             $dirIcon = $depth > 0 ? $dirIconClosed : $dirIconOpen;
+            $paddingLeft = ($depth * 15) . 'px';
             $html[] = <<<EOT
-                <div class='assets-dir' style="border:1px solid #ddd;">
-                    <span class='assets-diricon'>$dirIcon</span>
-                    <span class='assets-dirname'>$part</span> -
-                    <span class='assets-dirsize'>$dirsize</span>
+                <div class='assets-dir'>
+                    <div class='assets-dir-spans'>
+                        <span class='assets-diricon' style='display:inline-block;padding-left:$paddingLeft;'>$dirIcon</span>
+                        <span class='assets-dirname'>$part</span> -
+                        <span class='assets-dirsize'>$dirsize</span>
+                    </div>
 EOT;
             $html = array_merge($html, $this->generateAssetsHtml($data['dirs'], $depth + 1));
             $display = 'none';
-            $html[] = "<div class='assets-files' style='display:$display;padding-left:15px'>";
+            $paddingLeft = (($depth + 1) * 15) . 'px';
+            $html[] = "<div class='assets-files' style='display:$display;'>";
             foreach ($data['files'] as $arr) {
                 $filename = $arr['filename'];
                 $filesize = $this->formatBytes($arr['filesize']);
                 $html[] = <<<EOT
                     <div class='assets-file'>
-                        <span class='assets-fileicon'>$fileIcon</span>
+                        <span class='assets-fileicon' style='display:inline-block;padding-left:$paddingLeft;'>$fileIcon</span>
                         <span class='assets-filename'>$filename</span> -
                         <span class='assets-filesize'>$filesize</span>
                     </div>
@@ -224,14 +228,25 @@ EOT;
                 // toggle child .assets-dirs and .asset-files visibilty
                 // use event delegation for better performance
                 document.addEventListener('click', function (event) {
-                    var el = event.target;
-                    // user may have clicked on .assets-diricon, go up one so that el is .assets-dir
-                    el = (!el.classList.contains('assets-dir') && el.parentNode) ? el.parentNode : el;
-                    if (!el.classList.contains('assets-dir')) {
+                    var el, i, isAssetsDir, childEl;
+                    el = event.target;
+                    i = 3;
+                    isAssetsDir = false;
+                    do {
+                        if (el.classList.contains('assets-files')) {
+                            return;
+                        }
+                        isAssetsDir = el.classList.contains('assets-dir');
+                        if (isAssetsDir || !el.parentNode) {
+                            break;
+                        }
+                        el = el.parentNode;
+                    } while (--i >= 0);
+                    if (!isAssetsDir) {
                         return;
                     }
-                    for (var i = 0; i < el.childNodes.length; i++) {
-                        var childEl = el.childNodes[i];
+                    for (i = 0; i < el.childNodes.length; i++) {
+                        childEl = el.childNodes[i];
                         if (childEl.nodeType !== 1) {
                             continue;
                         }
@@ -248,6 +263,9 @@ EOT;
     {
         echo <<<EOT
             <style>
+                * {
+                    font-family: "Courier New";
+                }
                 table {
                     border-collapse: collapse;
                 }
@@ -261,10 +279,15 @@ EOT;
                 .assets-dir {
                     cursor: pointer;
                 }
+                .assets-dir-spans {
+                    border-bottom: 1px solid #eee;
+                }
                 .assets-dirname {
                     color: blue;
                 }
-                .assets-file {}
+                .assets-file {
+                    border-bottom: 1px solid #eee;
+                }
                 .assets-filename {
                     color: green;
                 }
