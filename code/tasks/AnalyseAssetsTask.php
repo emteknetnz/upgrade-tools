@@ -142,11 +142,24 @@ EOT;
         $lines = ['<th>' . implode('</th><th>', [
             '<a href="?which=database&sort=Name">Name</a>',
             '<a href="?which=database&sort=Rows">Rows</a>',
-            '<a href="?which=database&sort=MB">MB</a>'
+            '<a href="?which=database&sort=MB">MB</a>',
+            '<a href="?which=database&sort=perc">perc</a>'
         ]) . '</th>'];
-        foreach ($this->getTableData($sort) as $r) {
-            $lines[] = '<td>' . implode('</td><td>', [$r['Name'], $r['Rows'], $r['MB']]) . '</td>';
+        $data = $this->getTableData($sort);
+        foreach ($data as $r) {
+            $lines[] = '<td>' . implode('</td><td>', [
+                $r['Name'],
+                $r['Rows'],
+                round($r['MB'], 2),
+                round($r['perc'], 1) . '%'
+            ]) . '</td>';
         }
+        $lines[] = '<td>' . implode('</td><td>', [
+            '<strong>Total</strong>',
+            '<strong>' . array_sum(array_column($data, 'Rows')) . '</strong>',
+            '<strong>' . round(array_sum(array_column($data, 'MB')), 2) . '</strong>',
+            '<strong>' . round(array_sum(array_column($data, 'perc')), 1) .'%</strong>'
+        ]) . '</td>';
         echo '<table><tr>' . implode('</tr><tr>', $lines) . '</tr></table>';
     }
 
@@ -157,14 +170,19 @@ EOT;
             $data[] = [
                 'Name' => $r['Name'],
                 'Rows' => $r['Rows'],
-                'MB' => round(($r[ "Data_length" ] + $r[ "Index_length" ]) / (1024 * 1024), 2)
+                'MB' => ($r[ "Data_length" ] + $r[ "Index_length" ]) / (1024 * 1024)
             ];
+        }
+        $sumMB = array_sum(array_column($data, 'MB'));
+        foreach ($data as &$r) {
+            $r['perc'] = ($r['MB'] / $sumMB) * 100;
+            $r['MB'] = $r['MB'];
         }
         usort($data, function($a, $b) use ($sort) {
             if (!isset($a[$sort])) {
                 return 0;
             }
-            if (in_array($sort, ['MB', 'Rows'])) {
+            if (in_array($sort, ['MB', 'Rows', 'perc'])) {
                 return $a[$sort] > $b[$sort] ? -1 : 1;
             } else {
                 return strcasecmp($a[$sort], $b[$sort]);
