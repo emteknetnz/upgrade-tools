@@ -12,7 +12,7 @@ class StandardiseComposerJsonTask extends BuildTask
     protected $phpVersionRequires = [
         'php56' => '>=5.6',
         'php71' => '>=7.1',
-        'php73' => '>=7.1',
+        'php73' => '>=7.3',
     ];
 
     protected $phpVersionPlatforms = [
