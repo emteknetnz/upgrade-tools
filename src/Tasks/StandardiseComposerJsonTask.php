@@ -16,11 +16,13 @@ class StandardiseComposerJsonTask extends BuildTask
     protected $phpVersionRequires = [
         'php56' => '>=5.6',
         'php71' => '>=7.1',
+        'php73' => '>=7.3',
     ];
 
     protected $phpVersionPlatforms = [
         'php56' => '5.6.38',
         'php71' => '7.1.24',
+        'php71' => '7.3',
     ];
 
     /**
@@ -38,6 +40,7 @@ class StandardiseComposerJsonTask extends BuildTask
             <ul>
                 <li><a href='?phpversion=php56'>5.6</a></li>
                 <li><a href='?phpversion=php71'>7.1</a></li>
+                <li><a href='?phpversion=php73'>7.3</a></li>
             </ul>
 EOT;
         $phpVersion = $request->getVar('phpversion');
