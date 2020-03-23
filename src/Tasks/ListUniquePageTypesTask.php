@@ -112,7 +112,7 @@ EOT;
             }
             echo "<tr><td>";
             $frontEndUrl = $absBaseUrl . ltrim($page['frontend'], '/');
-            $cmsUrl = $absBaseUrl . ltrim($page['cms'], '/');
+            $cmsUrl = ltrim($page['cms'], '/');
             $blockClassNames = array_key_exists($page['id'], $this->pageIDsToBlockClassNames)
                 ? implode('<br>', $this->pageIDsToBlockClassNames[$page['id']]) : '';
             echo implode("</td><td>", [
